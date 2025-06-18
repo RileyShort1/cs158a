@@ -7,7 +7,7 @@ are running on the same machine. Otherwise, they should be changed
 accordingly. 
 
 Use the program by inputting the string that contains the length of message  
-and then the message itself.  
+(first two bytes) and then the message itself.  
 
 
 
