@@ -10,6 +10,7 @@ ADDR = (SERVER, PORT)
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
+# function to handle single connections
 def connection_manager(conn, addr):
     try: # ensure valid str to int conversion
         message_len = int(conn.recv(2).decode())  # get message length (first two bytes)
