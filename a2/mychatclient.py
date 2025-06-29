@@ -1,34 +1,44 @@
 import socket
 import threading
 
-SERVER = '10.0.0.210' # change to servers IP here
+SERVER = '10.0.0.37' # change to servers IP here
 PORT = 5000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((SERVER, PORT))
 
-end = threading.Event()
+# thread event signals connection status
+disconnected = threading.Event()
 
 # runs until server disconnects us
 def refresh_chat():
-    while not end.is_set():
-        chat = client.recv(1024)
-        if chat == b'':
-            end.set()
-            return
-        print(chat.decode())
+    while not disconnected.is_set():
+        try:
+            chat = client.recv(1024)
+            print(chat.decode())
+            if chat == b'': # server sends end signal
+                disconnected.set()
+        except OSError:
+            print("Connection Error ... disconnected")
+            disconnected.set()
+
 
 # waits on user input and sends to server
 def send():
-    while not end.is_set(): # while connection is still alive
+    while not disconnected.is_set(): # while connection is still alive
         message = input() # blocking function call
-        client.send(message.encode())
-        if "exit" in message:
-            end.set()
-            return
+        try:
+            client.send(message.encode())
+            if "exit" in message:
+                disconnected.set()
+        except OSError:
+            print("Connection Error ... disconnected")
+            disconnected.set()
+
 
 def enter_chat():
     print("Connected to chat server. Type 'exit' to leave.")
+
     chat_refresh_thread = threading.Thread(target=refresh_chat)
     chat_refresh_thread.start() # will run until connection closed
 

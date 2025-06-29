@@ -15,17 +15,16 @@ connections = set()
 
 # single connection manager
 def connection_manager(conn, addr):
-    connections.add(conn)
-
+    connections.add(conn) # add connection to active connection list
     while True:
-        data = conn.recv(1024)
+        data = conn.recv(1024) # get data from client
         message = data.decode()
-        if "exit" in message: # end chat (need to adjust for case)
-            connections.remove(conn) # remove client connection when done
+        if "exit" in message: # end chat
+            connections.remove(conn) # remove client connection from list when done
             conn.close()
             return
-        # else we transmit message to all chat members except ourselves
-        message = str(addr[1]) + ": " + message # add sender port number
+        # else we transmit message to all chat members in active list except ourselves
+        message = str(addr[1]) + ": " + message # add sender port number to message
         print(message) # log message to console
         for chat_member in connections:
             if chat_member != conn:
@@ -36,7 +35,7 @@ server.listen()
 
 while True:
     connection, address = server.accept()
-    print("New connection from ('" + address[0] + "', " + str(address[1]) + ")")
-    # create thread for connection
+    print("New connection from ('" + address[0] + "', " + str(address[1]) + ")") # connection info
+    # create thread for each connection
     thread = threading.Thread(target=connection_manager, args=(connection, address))
     thread.start()
