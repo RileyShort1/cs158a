@@ -3,7 +3,7 @@ import threading
 
 # Define constants
 PORT = 5000
-SERVER = 'localhost'
+SERVER = '0.0.0.0' # listen on all interfaces
 ADDR = (SERVER, PORT)
 
 # create socket

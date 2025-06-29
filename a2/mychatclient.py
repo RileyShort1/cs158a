@@ -1,7 +1,7 @@
 import socket
 import threading
 
-SERVER = 'localhost'
+SERVER = '10.0.0.210' # change to servers IP here
 PORT = 5000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,7 +16,7 @@ def refresh_chat():
         if chat == b'':
             end.set()
             return
-        print("Chatter: " + chat.decode())
+        print(chat.decode())
 
 # waits on user input and sends to server
 def send():
