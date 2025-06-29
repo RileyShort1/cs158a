@@ -1,7 +1,7 @@
 import socket
 import threading
 
-SERVER = '10.0.0.37' # change to servers IP here
+SERVER = 'localhost' # change to servers IP here
 PORT = 5000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
