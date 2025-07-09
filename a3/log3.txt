@@ -1,0 +1,5 @@
+Sent: b866adaf-7b10-4f16-8cf1-84e3b916ecde, flag=0, 0
+Ignored: uuid=8b31d479-685e-4a8f-81f0-cd8ebc3c01ca, flag=0 less, 0
+Leader is decided to b866adaf-7b10-4f16-8cf1-84e3b916ecde
+Sent=b866adaf-7b10-4f16-8cf1-84e3b916ecde, flag=1, equal, 1
+Leader is b866adaf-7b10-4f16-8cf1-84e3b916ecde

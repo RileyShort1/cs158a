@@ -1,0 +1,7 @@
+Sent: 8b31d479-685e-4a8f-81f0-cd8ebc3c01ca, flag=0, 0
+Ignored: uuid=45cda432-6bde-4d67-861a-6adeb2b12afe, flag=0 less, 0
+Received: uuid=b866adaf-7b10-4f16-8cf1-84e3b916ecde, flag=0, greater, 0
+Sent: uuid=b866adaf-7b10-4f16-8cf1-84e3b916ecde, flag=0, greater, 0
+Received: uuid=b866adaf-7b10-4f16-8cf1-84e3b916ecde, flag=1, 0
+Leader is decided to b866adaf-7b10-4f16-8cf1-84e3b916ecde
+Leader is b866adaf-7b10-4f16-8cf1-84e3b916ecde
