@@ -4,15 +4,25 @@ import uuid
 import csv
 import json
 import time
+import sys
+
+# default looks for config file in working directory
+config_file_path = "config.txt"
+log_file_path = "log.txt"
+
+# if command line argument path is provided use that
+if len(sys.argv) > 1:
+    config_file_path = sys.argv[1]
+if len(sys.argv) > 2:
+    log_file_path = sys.argv[2]
 
 # get ip and port info from config
-with open("config.txt", "r") as file:
+with open(config_file_path, "r") as file:
     reader = csv.reader(file)
     config = list(reader)
 
 # init global connection info with config file info
 SERVER = config[0][0]
-print("Server is: " + SERVER)
 SERVER_PORT = config[0][1]
 CLIENT_SERVER = config[1][0]
 CLIENT_PORT = config[1][1]
@@ -75,8 +85,6 @@ def run_server():
     global SERVER_PORT
     global CLIENT
 
-    print("Server value = " + SERVER)
-
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((SERVER, int(SERVER_PORT)))
     server.listen()
@@ -88,10 +96,12 @@ def run_server():
     while not client_connected.is_set():
         pass
 
-    log_file = open("log.txt", "a")
+    log_file = open(log_file_path, "a")
     log_file.write("Sent: " + str(NODE_INFO.uuid) + ", flag=" + str(NODE_INFO.flag) + ", " + str(NODE_INFO.flag) + "\n")
     # send our id
     send_message(CLIENT, NODE_INFO)
+
+    leader_id = None
 
     buffer = bytes()
 
@@ -109,16 +119,20 @@ def run_server():
 
             if received_message.flag == 1:
                 # leader has already been decided
-                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", " + str(received_message.flag) + "\n")
+                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", " + str(NODE_INFO.flag) + "\n")
                 log_file.write("Leader is decided to " + str(received_message.uuid) + "\n")
+                NODE_INFO.flag = 1 # mark as leader found
                 send_message(CLIENT, received_message)
+                leader_id = str(received_message.uuid)
+                log_file.write("Leader is " + leader_id + "\n")
                 connection.close()
                 log_file.close()
                 return
 
 
             if received_message.uuid > NODE_INFO.uuid:
-                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", greater, " + str(received_message.flag) + "\n")
+                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", greater, " + str(NODE_INFO.flag) + "\n")
+                log_file.write("Sent: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", greater, " + str(NODE_INFO.flag) + "\n")
                 send_message(CLIENT, received_message) # forward message
 
             elif received_message.uuid == NODE_INFO.uuid:
@@ -127,11 +141,13 @@ def run_server():
                 NODE_INFO.flag = 1 # mark as leader found
                 log_file.write("Sent=" + str(NODE_INFO.uuid) + ", flag=" + str(NODE_INFO.flag) + ", equal, " + str(NODE_INFO.flag) + "\n")
                 send_message(CLIENT, NODE_INFO)
+                leader_id = str(NODE_INFO.uuid)
+                log_file.write("Leader is " + leader_id + "\n")
                 log_file.close()
                 connection.close()
                 return
             else:
-                log_file.write("Ignored: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + " less, " + str(received_message.flag) + "\n")
+                log_file.write("Ignored: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + " less, " + str(NODE_INFO.flag) + "\n")
 
 
 
