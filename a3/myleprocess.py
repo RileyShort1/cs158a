@@ -12,6 +12,7 @@ with open("config.txt", "r") as file:
 
 # init global connection info with config file info
 SERVER = config[0][0]
+print("Server is: " + SERVER)
 SERVER_PORT = config[0][1]
 CLIENT_SERVER = config[1][0]
 CLIENT_PORT = config[1][1]
@@ -62,9 +63,9 @@ def run_client():
     # establish connection with other server
     try:
         CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        CLIENT.connect((CLIENT_SERVER, CLIENT_PORT))
-    except OSError:
-        print("Client Connection Error")
+        CLIENT.connect((CLIENT_SERVER, int(CLIENT_PORT)))
+    except OSError as e:
+        print(f"Client Connection Error: [Errno {e.errno}] {e.strerror} - {e}")
         return
     client_connected.set() # set flag confirming client connection success
 
@@ -72,22 +73,26 @@ def run_client():
 def run_server():
     global SERVER
     global SERVER_PORT
+    global CLIENT
 
-    SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    SERVER.bind((SERVER, SERVER_PORT))
-    SERVER.listen()
+    print("Server value = " + SERVER)
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((SERVER, int(SERVER_PORT)))
+    server.listen()
 
     # accept one connection
-    connection, address = SERVER.accept()
+    connection, address = server.accept()
 
     # wait for client to confirm connection before proceeding
     while not client_connected.is_set():
         pass
 
+    log_file = open("log.txt", "a")
+    log_file.write("Sent: " + str(NODE_INFO.uuid) + ", flag=" + str(NODE_INFO.flag) + ", " + str(NODE_INFO.flag) + "\n")
     # send our id
     send_message(CLIENT, NODE_INFO)
 
-    log_file = open("log.txt", "a")
     buffer = bytes()
 
     while True:
@@ -104,26 +109,29 @@ def run_server():
 
             if received_message.flag == 1:
                 # leader has already been decided
-                log_file.write("Leader is decided to " + str(received_message.uuid))
+                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", " + str(received_message.flag) + "\n")
+                log_file.write("Leader is decided to " + str(received_message.uuid) + "\n")
+                send_message(CLIENT, received_message)
                 connection.close()
                 log_file.close()
                 return
 
 
             if received_message.uuid > NODE_INFO.uuid:
-                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", greater, " + str(received_message.flag))
+                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", greater, " + str(received_message.flag) + "\n")
                 send_message(CLIENT, received_message) # forward message
 
             elif received_message.uuid == NODE_INFO.uuid:
                 # we are the leader
-                log_file.write("Leader is decided to " + str(NODE_INFO.uuid))
+                log_file.write("Leader is decided to " + str(NODE_INFO.uuid) + "\n")
                 NODE_INFO.flag = 1 # mark as leader found
-                log_file.write("Sent=" + str(NODE_INFO.uuid) + ", flag=" + str(NODE_INFO.flag) + ", equal, " + str(NODE_INFO.flag))
+                log_file.write("Sent=" + str(NODE_INFO.uuid) + ", flag=" + str(NODE_INFO.flag) + ", equal, " + str(NODE_INFO.flag) + "\n")
+                send_message(CLIENT, NODE_INFO)
                 log_file.close()
                 connection.close()
                 return
             else:
-                log_file.write("Ignored: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + " less, " + str(received_message.flag))
+                log_file.write("Ignored: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + " less, " + str(received_message.flag) + "\n")
 
 
 
