@@ -3,7 +3,7 @@ To run the program, create the number of config files you want to run
 Run each instance of the "myleprocess.py" script with two command line arguments -  
 The full path of the config file and the path and/or name of the log file you want  
 the program to create. These two arguments are optional, without providing them,  
-the program will default to looking for the a "config.txt" file in the working directory  
+the program will default to looking for a "config.txt" file in the working directory  
 and creating a generic "log.txt" file in the working directory. 
 
 
