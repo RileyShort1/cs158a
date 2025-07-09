@@ -37,6 +37,13 @@ class Message:
     def print_message(self):
         return "UUID: " + str(self.uuid) + ", Flag: " + str(self.flag)
 
+def json_string_to_message_obj(json_string):
+    message = Message()
+    message_data = json.loads(json_string)
+    message.uuid = uuid.UUID(message_data["uuid"])
+    message.flag = int(message_data["flag"])
+    return message
+
 
 NODE_INFO = Message() # our nodes id info
 
@@ -80,6 +87,7 @@ def run_server():
     # send our id
     send_message(CLIENT, NODE_INFO)
 
+    log_file = open("log.txt", "a")
     buffer = bytes()
 
     while True:
@@ -89,9 +97,34 @@ def run_server():
         buffer += data # append data to buffer
 
         while b'\n' in buffer:
-            # extract message data from buffer up to newline
-            message, buffer = buffer.split(b'\n', 1)
-            # process message
+            # extract message data from buffer up to newline char
+            message, buffer = buffer.split(b'\n', 1) # does not include newline
+            # convert message to Message object
+            received_message = json_string_to_message_obj(message.decode())
+
+            if received_message.flag == 1:
+                # leader has already been decided
+                log_file.write("Leader is decided to " + str(received_message.uuid))
+                connection.close()
+                log_file.close()
+                return
+
+
+            if received_message.uuid > NODE_INFO.uuid:
+                log_file.write("Received: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + ", greater, " + str(received_message.flag))
+                send_message(CLIENT, received_message) # forward message
+
+            elif received_message.uuid == NODE_INFO.uuid:
+                # we are the leader
+                log_file.write("Leader is decided to " + str(NODE_INFO.uuid))
+                NODE_INFO.flag = 1 # mark as leader found
+                log_file.write("Sent=" + str(NODE_INFO.uuid) + ", flag=" + str(NODE_INFO.flag) + ", equal, " + str(NODE_INFO.flag))
+                log_file.close()
+                connection.close()
+                return
+            else:
+                log_file.write("Ignored: uuid=" + str(received_message.uuid) + ", flag=" + str(received_message.flag) + " less, " + str(received_message.flag))
+
 
 
 
@@ -106,5 +139,9 @@ client_thread.start()
 
 client_thread.join()
 server_thread.join()
+
+if client_connected.is_set():
+    CLIENT.close()
+
 
 
