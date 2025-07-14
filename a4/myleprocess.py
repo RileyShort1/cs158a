@@ -66,7 +66,7 @@ class Message:
 NODE_INFO = Message() # our nodes id info
 
 
-# sends message obj using socket
+# sends message obj using socket and writes to log file
 def send_message(client_socket, message):
     try:
         client_socket.sendall(message.convert_to_json().encode())
@@ -113,7 +113,7 @@ def process_messages(client, message):
     
     if message.flag == 1: # leader has already been decided
         NODE_INFO.flag = 1 # mark as leader found
-        send_message(client, message)
+        send_message(client, message) # logged by send func
         leader_found.set()
         leader_id = str(message.uuid)
         return
@@ -123,10 +123,10 @@ def process_messages(client, message):
 
     elif message.uuid == NODE_INFO.uuid:
         # we are the leader
-        NODE_INFO.flag = 1
+        NODE_INFO.flag = 1 # set leader flag
         send_message(client, NODE_INFO)
         leader_found.set()
-        leader_id = str(NODE_INFO.uuid)
+        leader_id = str(NODE_INFO.uuid) # save leader id
         return
     else:
         print("Ignored: " + message.to_string() + " less, " + str(NODE_INFO.flag) + "\n")
@@ -165,4 +165,4 @@ client_thread.start()
 client_thread.join()
 server_thread.join()
 
-
+log_file.close()
