@@ -1,0 +1,2 @@
+I did not find issues effecting functionality, but I did find design issues and made improvements to the architecture of the program
+as well as making small changes to the log file messages

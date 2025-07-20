@@ -41,6 +41,9 @@ leader_found = threading.Event()
 
 log_file = open(log_file_path, "r")
 
+def log(message):
+    global log_file
+    log_file.write(message)
 
 class Message:
     # converts obj to JSON string with newline termination
@@ -65,12 +68,13 @@ class Message:
 
 NODE_INFO = Message() # our nodes id info
 
+LEADER_ID = None # var for tracking leader id
 
 # sends message obj using socket
 def send_message(client_socket, message):
     try:
         client_socket.sendall(message.convert_to_json().encode())
-        log_file.write("Sent: " + message.to_string() + "\n")
+        log("Sent: " + message.to_string() + "\n")
     except OSError:
         print("Message Send Error")
 
@@ -106,16 +110,20 @@ def accumulate_messages():
             while b'\n' in buffer: # extract message data (does not include \n
                 message, buffer = buffer.split(b'\n', 1)
                 MESSAGES.put(Message(message.decode())) # enqueue message
+                equality = "less" if message.uuid < NODE_INFO.uuid else "greater" if message.uuid > NODE_INFO.uuid else "equal"
+                log(message.to_string() + " " + equality + ", " + str(NODE_INFO.uuid) + "\n") # log received message
 
 
 # function processes message obj according to LE algorithm
 def process_messages(client, message):
-    
+    global LEADER_ID
+
     if message.flag == 1: # leader has already been decided
         NODE_INFO.flag = 1 # mark as leader found
+        log("Leader is decided to " + str(message.uuid) + "\n")
         send_message(client, message)
         leader_found.set()
-        leader_id = str(message.uuid)
+        LEADER_ID = str(message.uuid) # save leader ID
         return
 
     if message.uuid > NODE_INFO.uuid:
@@ -124,12 +132,13 @@ def process_messages(client, message):
     elif message.uuid == NODE_INFO.uuid:
         # we are the leader
         NODE_INFO.flag = 1
+        log("Leader is decided to " + str(message.uuid) + "\n")
         send_message(client, NODE_INFO)
         leader_found.set()
-        leader_id = str(NODE_INFO.uuid)
+        LEADER_ID = str(NODE_INFO.uuid) # save leader ID
         return
     else:
-        print("Ignored: " + message.to_string() + " less, " + str(NODE_INFO.flag) + "\n")
+        log("Ignored: " + message.to_string() + "\n")
 
 
 # connects with client and sets global connection variable
@@ -165,4 +174,4 @@ client_thread.start()
 client_thread.join()
 server_thread.join()
 
-
+log_file.close()
