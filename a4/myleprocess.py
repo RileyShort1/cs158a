@@ -39,11 +39,14 @@ server_connected = threading.Event()
 
 leader_found = threading.Event()
 
-log_file = open(log_file_path, "r")
+log_file = open(log_file_path, "w")
 
+log_lock = threading.Lock()
 def log(message):
     global log_file
-    log_file.write(message)
+    with log_lock:
+        log_file.write(message)
+        log_file.flush()
 
 class Message:
     # converts obj to JSON string with newline termination
@@ -54,7 +57,7 @@ class Message:
         }) + "\n"
 
     def to_string(self):
-        return "uuid: " + str(self.uuid) + ", flag: " + str(self.flag)
+        return "uuid=" + str(self.uuid) + ", flag=" + str(self.flag)
 
     def __init__(self, json_string=None):
         if json_string is None:
@@ -93,8 +96,7 @@ def accumulate_messages():
     server_connected.set() # set flag to true
 
     buffer = bytes()
-
-    while server_connected.is_set():
+    while not leader_found.is_set():
         try:
             data = connection.recv(1024)
         except socket.error:
@@ -105,13 +107,15 @@ def accumulate_messages():
         if not data: # connection has been closed
             server_connected.clear() # set flag to false
             connection.close()
+            break
         else:
             buffer += data # append data to buffer
             while b'\n' in buffer: # extract message data (does not include \n
                 message, buffer = buffer.split(b'\n', 1)
-                MESSAGES.put(Message(message.decode())) # enqueue message
-                equality = "less" if message.uuid < NODE_INFO.uuid else "greater" if message.uuid > NODE_INFO.uuid else "equal"
-                log(message.to_string() + " " + equality + ", " + str(NODE_INFO.uuid) + "\n") # log received message
+                message_obj = Message(message.decode())
+                MESSAGES.put(message_obj) # enqueue message
+                equality = "less" if message_obj.uuid < NODE_INFO.uuid else "greater" if message_obj.uuid > NODE_INFO.uuid else "equal"
+                log("Received: " + message_obj.to_string() + ", " + equality + ", " + str(NODE_INFO.flag) + "\n") # log received message
 
 
 # function processes message obj according to LE algorithm
@@ -152,6 +156,9 @@ def run_client(delay):
         return
     client_connected.set() # set flag
 
+    # send init message
+    send_message(client, NODE_INFO)
+
     # get message and process
     while not leader_found.is_set():
         try:
@@ -163,15 +170,18 @@ def run_client(delay):
     client_connected.clear()
     client.close()
 
+
 # start server in thread
-server_thread = threading.Thread(target=accumulate_messages())
+server_thread = threading.Thread(target=accumulate_messages)
 server_thread.start()
 
 # start client
 client_thread = threading.Thread(target=run_client, args=(5,))
 client_thread.start()
 
+
 client_thread.join()
 server_thread.join()
+log("\nLeader is " + str(LEADER_ID))
 
 log_file.close()
