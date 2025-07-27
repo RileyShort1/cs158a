@@ -1,5 +1,7 @@
+import re
 import socket
 import ssl
+from bs4 import BeautifulSoup
 
 HOSTNAME = 'www.google.com'
 PORT = 443
@@ -12,9 +14,29 @@ client.connect((HOSTNAME, PORT))
 ssl_socket = context.wrap_socket(client, server_hostname=HOSTNAME)
 print("Socket Created")
 
-request = 'GET / HTTP/1.1'
+request = 'GET / HTTP/1.1\r\n\r\n'
 ssl_socket.sendall(request.encode())
-print("Sent Request")
 
-print(ssl_socket.recv(1024).decode())
-print("Recv Done")
+response = bytes()
+chunk = bytes()
+while True:
+    try:
+        chunk = ssl_socket.recv(1024)
+        response += chunk # add to response message
+        if b'0\r\n\r\n' in chunk:
+            break
+    except OSError:
+        print("Connection Error")
+
+def extract_html(data):
+    print("Temp")
+response_string = response.decode()
+html = response_string[response_string.find('<!doctype html>'):]
+cleaned_html = re.sub('[0-9a-fA-F]+\r\n', '', html) # sub out chunked data markers
+print(cleaned_html)
+
+
+
+
+
+
