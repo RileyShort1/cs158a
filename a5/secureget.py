@@ -1,7 +1,6 @@
 import re
 import socket
 import ssl
-#from bs4 import BeautifulSoup
 
 HOSTNAME = 'www.google.com'
 PORT = 443
@@ -28,12 +27,10 @@ while True:
     except OSError:
         print("Connection Error")
 
-def extract_html(data):
-    print("Temp")
 response_string = response.decode()
 html = response_string[response_string.find('<!doctype html>'):]
 cleaned_html = re.sub('[0-9a-fA-F]+\r\n', '', html) # sub out chunked data markers
-#print(cleaned_html)
+
 
 file = open("html_data.html", 'w')
 file.write(cleaned_html)
